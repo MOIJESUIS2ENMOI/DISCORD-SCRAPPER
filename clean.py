@@ -51,7 +51,47 @@ def exportDataToXls(guild_name, invite_code, expires_at, member_count, presence_
     sheet.write(i, 13, inviter_id)
     sheet.write(i, 14, inviter_name)
     sheet.write(i, 15, inviter_avatar)
-            
+
+def exportDataToDb(guild_name, invite_code, expires_at, member_count, presence_count, guild_id, guild_icon, guild_banner, guild_description, verification_level, invite_channelid, invite_channelname, inviter_id, inviter_name, inviter_avatar, i):
+    url = "https://api.sos-epromotion.com/v1/invitesScrapper/simpleInvite/putData/"
+    data = {
+        'exploration_date': str(datetime.today()),
+        'guild_name' : guild_name,
+        'guild_invite': invite_code,
+        'expiration_date': expires_at,
+        'guild_members_count': member_count,
+        'guild_members_online': presence_count,
+        'guild_id': guild_id,
+        'guild_icon': guild_icon,
+        'guild_banner': guild_banner,
+        'guild_description': guild_description,
+        'verification_level': verification_level,
+        'invite_channel_id': invite_channelid,
+        'invite_channel_name': invite_channelname,
+        'inviter_id': inviter_id,
+        'inviter_name': inviter_name,
+        'inviter_avatar': inviter_avatar
+    }
+    try:
+        r = requests.post(url, data=data)
+        if r.status_code == 200:
+            if '1' in str(r.content):
+                print("Data successfully sent to the server!")
+            else:
+                print("Data already in the server server!")
+        if r.status_code == 400:
+            print("Bad request!")
+        if r.status_code == 500:
+            print("Server internal error!")
+    except Exception as err:
+        r = requests.post(url, data=data)
+        if r.status_code == 200:
+            print("invite successfully sent to the server!")
+        if r.status_code == 400:
+            print("Bad request!")
+        if r.status_code == 500:
+            print("Server internal error!")
+        
 def cleanInvite(invite):
     characters = "'!?[]{}|><~°^$£¥•\\§@#&\"€()-*%_+=;,"
     for x in range (len(characters)):
@@ -59,22 +99,17 @@ def cleanInvite(invite):
     return invite
 		
 def prepareInvite(invite):
-    print(invite)
     if "https://discord.com/invites/" in invite:
         invite = invite.replace("https://discord.com/invites/", "")
-        print(invite)
         return invite
     elif "https://discord.gg/" in invite:
         invite = invite.replace("https://discord.gg/", "")
-        print(invite)
         return invite
     elif "discord.gg/" in invite:
         invite = invite.replace("discord.gg/", "")
-        print(invite)
         return invite
     elif "discord.com/invites/":
         invite = invite.replace("discord.com/invites/", "")
-        print(invite)
         return invite
     else:
         exportUnknownInvites(invite)
@@ -152,11 +187,17 @@ def getInviteData(invite, token, proxies, i):
             print(r)
             invite_code = r["code"]
             expires_at = r["expires_at"]
+            if expires_at == None:
+                expires_at = "None"
             guild_id = r["guild"]["id"]
             guild_name = r["guild"]["name"]
             guild_banner = r["guild"]["banner"]
+            if guild_banner == None:
+                guild_banner = "None"
             guild_icon = r["guild"]["icon"]
             guild_description = r["guild"]["description"]
+            if guild_description == None:
+                guild_description = "None"
             verification_level = r["guild"]["verification_level"]
             invite_channelid = r["channel"]["id"]
             invite_channelname = r["channel"]["name"]
@@ -166,10 +207,10 @@ def getInviteData(invite, token, proxies, i):
                 inviter_discriminator = r["inviter"]["discriminator"]
                 inviter_avatar = r["inviter"]["avatar"]
             except Exception as err:
-                inviter_id = None
-                inviter_name = None
-                inviter_discriminator = None
-                inviter_avatar = None
+                inviter_id = "None"
+                inviter_name = "None"
+                inviter_discriminator = "None"
+                inviter_avatar = "None"
             member_count = r["approximate_member_count"]
             presence_count = r["approximate_presence_count"]
         
@@ -204,8 +245,10 @@ def getInviteData(invite, token, proxies, i):
             print(f"INVITE CHANNEL NAME: {invite_channelname}")
             print(f"MEMBER COUNT: {member_count}")
             print(f"MEMBER ONLINE COUNT: {presence_count}")
-        
+            
             exportDataToXls(guild_name, invite_code, expires_at, member_count, presence_count, guild_id, guild_icon, guild_banner, guild_description, verification_level, invite_channelid, invite_channelname, inviter_id, inviter_name, inviter_avatar, i)
+            exportDataToDb(guild_name, invite_code, expires_at, member_count, presence_count, guild_id, guild_icon, guild_banner, guild_description, verification_level, invite_channelid, invite_channelname, inviter_id, inviter_name, inviter_avatar, i)
+
         else:
             print("Unknown error")
             print(r.status_code)
@@ -241,10 +284,13 @@ for invite in invitesList:
     i = i + 1
     clearedInvite = cleanInvite(invite)
     preparedInvite = prepareInvite(clearedInvite)
-    proxies = { # use the proxies
+    proxie = { # use the proxies
         "http": f"https://{random.choice(proxiesList)}",
         "https": f"https://{random.choice(proxiesList)}"
         }
+    proxies = None
     getInviteData(preparedInvite, token, proxies, i)
-    time.sleep(random.randint(2, 10))
+    wait = random.randint(2, 10)
+    print(f"Waiting {wait} seconds")
+    time.sleep(wait)
     workbook.save("invites.xls")

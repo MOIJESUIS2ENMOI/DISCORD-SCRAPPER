@@ -54,6 +54,7 @@ def exportDataToXls(guild_name, invite_code, expires_at, member_count, presence_
 
 def exportDataToDb(guild_name, invite_code, expires_at, member_count, presence_count, guild_id, guild_icon, guild_banner, guild_description, verification_level, invite_channelid, invite_channelname, inviter_id, inviter_name, inviter_avatar, i):
     url = "https://api.sos-epromotion.com/v1/invitesDataScrapper/simpleInvite/putData/"
+    
     data = {
         'exploration_date': str(datetime.today()),
         'guild_name' : guild_name,

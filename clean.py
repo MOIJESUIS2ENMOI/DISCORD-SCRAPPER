@@ -15,7 +15,7 @@ def readFile():
     for line in Lines:
         invitesList.append(line.strip())
     return invitesList
-
+    
 def exportUnknownInvites(invite):
     try:
         file = open('invitesInvalid.txt', 'a', encoding="utf-8")
@@ -35,7 +35,7 @@ def exportUnknownInvites(invite):
             print(f"{Fore.LIGHTRED_EX}          ⮡ Error: {err}{Fore.RESET}")
             
 def exportDataToXls(guild_name, invite_code, expires_at, member_count, presence_count, guild_id, guild_icon, guild_banner, guild_description, verification_level, invite_channelid, invite_channelname, inviter_id, inviter_name, inviter_avatar, i):
-    sheet.write(i, 0, str(datetime.today())) #datetime.today()
+    sheet.write(i, 0, str(datetime.today()))
     sheet.write(i, 1, guild_name)
     sheet.write(i, 2, invite_code)
     sheet.write(i, 3, expires_at)
@@ -52,6 +52,53 @@ def exportDataToXls(guild_name, invite_code, expires_at, member_count, presence_
     sheet.write(i, 14, inviter_name)
     sheet.write(i, 15, inviter_avatar)
 
+def getInviteFromDb():
+    url = "https://api.sos-epromotion.com/v1/invitesScrapper/getData/"
+    try:
+        r = requests.post(url)
+        if r.status_code == 200:
+            if '1' in str(r.content):
+                print("No data in db")
+                return False, None
+            else:
+                print(f"invite rec: {r.content}")
+                return True, str(r.content)
+        elif r.status_code == 500:
+            print("SERVER internal error")
+            return False, None
+        else:
+            print("Unknown error")
+            print(r.status_code)
+            print(r.content)
+            return False, None
+    except Exception as err:
+        return False, None
+        
+def deleteInviteFromDb(invite):
+    url = "https://api.sos-epromotion.com/v1/invitesScrapper/deleteData/"
+    data = {
+        'guild_invite' : invite
+    }
+    try:
+        r = requests.post(url, data=data)
+        if r.status_code == 200:
+            print(r.content)
+            if '1' in str(r.content):
+                print("Data successfully deleted in db")
+            elif '2' in str(r.content):
+                print("Error while deleting data in server part")
+            else:
+                print("An unknown error occurred")
+        elif r.status_code == 500:
+            print("SERVER internal error")
+        else:
+            print("Unknown error")
+            print(r.status_code)
+            print(r.content)
+            
+    except Exception as err:
+        print("a client error occurred")
+    
 def exportDataToDb(guild_name, invite_code, expires_at, member_count, presence_count, guild_id, guild_icon, guild_banner, guild_description, verification_level, invite_channelid, invite_channelname, inviter_id, inviter_name, inviter_avatar, i):
     url = "https://api.sos-epromotion.com/v1/invitesDataScrapper/simpleInvite/putData/"
     
@@ -73,13 +120,14 @@ def exportDataToDb(guild_name, invite_code, expires_at, member_count, presence_c
         'inviter_name': inviter_name,
         'inviter_avatar': inviter_avatar
     }
+
     try:
         r = requests.post(url, data=data)
         if r.status_code == 200:
             if '1' in str(r.content):
                 print("Data successfully sent to the server!")
             else:
-                print("Data already in the server server!")
+                print("Data already in the server !")
         if r.status_code == 400:
             print("Bad request!")
         if r.status_code == 500:
@@ -98,19 +146,31 @@ def cleanInvite(invite):
     for x in range (len(characters)):
         invite = invite.replace(characters[x], "")
     return invite
-		
+
+def softClean(invite):
+    if "\\n" in str(invite):
+        invite = invite[2:][:-3]+"\n"
+    else:
+        invite = invite[2:][:-1]
+    print(invite)
+    return str(invite)
+ 
 def prepareInvite(invite):
     if "https://discord.com/invites/" in invite:
         invite = invite.replace("https://discord.com/invites/", "")
+        print(invite)
         return invite
     elif "https://discord.gg/" in invite:
         invite = invite.replace("https://discord.gg/", "")
+        print(invite)
         return invite
     elif "discord.gg/" in invite:
         invite = invite.replace("discord.gg/", "")
+        print(invite)
         return invite
     elif "discord.com/invites/":
         invite = invite.replace("discord.com/invites/", "")
+        print(invite)
         return invite
     else:
         exportUnknownInvites(invite)
@@ -277,20 +337,32 @@ sheet.write(0, 15, "INVITER AVATAR")
 
 invitesList = []
 token = "OTY0OTY0MjIxMDI2NzE3NzM2.YlxJng.RV45kc6nmY5CzigOixGl_So0kSI"
-readFile()
+
 proxiesList = getproxies()
 i = 0 
-for invite in invitesList:
+while True:
     i = i + 1
-    clearedInvite = cleanInvite(invite)
-    preparedInvite = prepareInvite(clearedInvite)
-    proxie = { # use the proxies
-        "http": f"https://{random.choice(proxiesList)}",
-        "https": f"https://{random.choice(proxiesList)}"
-        }
-    proxies = None
-    getInviteData(preparedInvite, token, proxies, i)
-    wait = random.randint(2, 10)
-    print(f"Waiting {wait} seconds")
-    time.sleep(wait)
-    workbook.save("invites.xls")
+    work, invite = getInviteFromDb()
+    print(invite)
+    if work == True:
+        if "\\n" in str(invite):
+            inviteC = invite[2:][:-3]
+            print("invitec"+inviteC)
+        else:
+            inviteC = invite[2:][:-1]
+            print("invitec"+inviteC)
+        inviteC = cleanInvite(inviteC)
+        inviteC = prepareInvite(inviteC)
+        proxie = { # use the proxies
+            "http": f"https://{random.choice(proxiesList)}",
+            "https": f"https://{random.choice(proxiesList)}"
+            }
+        proxies = None
+        getInviteData(invite, token, proxies, i)
+        deleteInviteFromDb(softClean(invite))
+        workbook.save("invites.xls")
+        wait = random.randint(2, 10)
+        print(f"Waiting {wait} seconds")
+        time.sleep(wait)
+    else:
+        time.sleep(10)

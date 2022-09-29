@@ -7,7 +7,17 @@ import time
 import random
 import threading
 import xlwt
+from datetime import datetime
 
+messagesexplored = 0
+invitesfound = 0
+
+def spoof():
+    if os.name == 'nt':
+        os.system("cls")
+    else:
+        os.system("clear")
+        
 def getMessages(channel_id, token, before_id):
     if before_id == "":
         url = f"https://discord.com/api/v9/channels/{channel_id}/messages?limit=100"
@@ -19,13 +29,23 @@ def getMessages(channel_id, token, before_id):
         "Content-Type": "application/json",
         "Authorization": token,
         }
-
-    r = requests.get(url, headers=headers)
-    json = r.json()
-    if json != {}:
-        return extractInformations(json, before_id)
-    else:
-        return None
+    try:
+        r = requests.get(url, headers=headers)
+        json = r.json()
+        if json != {}:
+            global messagesexplored
+            messagesexplored = messagesexplored + 100
+            return extractInformations(json, before_id)
+        else:
+            return None
+    except:
+        r = requests.get(url, headers=headers)
+        json = r.json()
+        if json != {}:
+            messagesexplored = messagesexplored + 100
+            return extractInformations(json, before_id)
+        else:
+            return None
     
 def getExportedList():
     try:
@@ -85,13 +105,17 @@ def extractInvite(content):
                 #print(f"Message links: Invite Found:{invite}!")
                 if invite not in inviteListFound:
                     inviteListFound.append(invite)
+                    global invitesfound
+                    invitesfound = invitesfound + 1
                     exportInvite(invite)
+                    sendDataToServer(invite)
                 
                     #print(f"Message links: Link already found in this channel...")
             
                 #rint(f"Message links: Link is not an invite: {invite}")
         except Exception as err:
             print("An error occured while cleaning the invite...")
+            print(err)
 
 def getUrl(string):
     #print("url start")
@@ -120,13 +144,55 @@ def exportInvite(invite):
             print(f"{Fore.LIGHTRED_EX} [x]==> An error occured while writing to the file, skiping...{Fore.RESET}")
             print(f"{Fore.LIGHTRED_EX}          ⮡ Error: {err}{Fore.RESET}")
             
-def startaScrape(channel_id, before_id, token):
+def sendDataToServer(invite):
+    url = "https://api.sos-epromotion.com/v1/invitesScrapper/putData/"
+    
+    data = {
+        'exploration_date': str(datetime.today()),
+        'guild_invite': invite
+    }
+    
+    try:
+        r = requests.post(url, data=data)
+        '''
+        if r.status_code == 200:
+            if '2' in str(r.content):
+                print(r.content)
+                print("data already in db")
+            elif '1' in str(r.content):
+                print("data successfully sent to server")
+            else:
+                print("unknow server error")    
+        if r.status_code == 400:
+            print("invalid data in request")
+        elif r.status_code == 500:
+            print("server error")
+        else:
+            print("Unknown error")
+            print(r.status_code)
+            print(r.content)
+            '''
+    except Exception as err:
+        print("a client error occured")
+        print(err)
+
+def startaScrape(channel_id, before_id, token, alpha):
     i = 0
+    try:
+        myfile = open(f'save/{channel_id}', 'r')
+        before_id = myfile.read()
+    except Exception as err:
+        before_id = ''
     while before_id != None:
         before_id = getMessages(channel_id, token, before_id)
+        myfile = open(f'save/{channel_id}', 'w+')
+        myfile.write(before_id)
+        myfile.close()
         i = i + 100
-        sys.stdout.write(f"{Fore.LIGHTGREEN_EX}\rINVITES DISCOVERED: {len(inviteListFound)} | MESSAGES EXPLORED: +-{i*len(channel_ids)} {Fore.RESET}")
-        sys.stdout.flush()
+        if alpha :
+            sys.stdout.write(f"{Fore.LIGHTGREEN_EX}\rINVITES DISCOVERED: {invitesfound} | MESSAGES EXPLORED: {messagesexplored} | ACTIVE CHANNEL SCRAPE: {threading.active_count()}{Fore.RESET}")
+            sys.stdout.flush()
+        
     print(f"All messages where scapped in {channel_id}, found {len(inviteListFound)} invites!")
     print(f"Invites Found:\n\n{getExportedList()}")
 
@@ -138,6 +204,10 @@ token = "OTY0OTY0MjIxMDI2NzE3NzM2.YlxJng.RV45kc6nmY5CzigOixGl_So0kSI"
 i = 0
 
 for channel_id in channel_ids:
-    threading.Thread(target= startaScrape, args=(channel_id, before_id, token)).start()
+    if threading.active_count() >= 1:
+        alpha = True
+    else:
+        alpha = False
+    threading.Thread(target= startaScrape, args=(channel_id, before_id, token, alpha)).start()
 
 

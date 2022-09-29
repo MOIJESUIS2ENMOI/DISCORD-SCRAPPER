@@ -1,4 +1,5 @@
 import requests
+import httpx
 import random
 import time
 from datetime import datetime
@@ -21,7 +22,6 @@ def readFiles():
             invite = cleanInvite(line)
             sendDataToServer(invite)
             i = i + 1
-            print(f"{i} server sent to server")
     with open("invites2.txt", 'r', encoding='utf-8') as fp:
         Lines = fp.readlines()
     for line in Lines:
@@ -31,7 +31,6 @@ def readFiles():
             invite = cleanInvite(line)
             sendDataToServer(invite)
             i = i + 1
-            print(f"{i} server sent to server")
     with open("invites.2.txt", 'r', encoding='utf-8') as fp:
         Lines = fp.readlines()
     for line in Lines:
@@ -41,7 +40,6 @@ def readFiles():
             invite = cleanInvite(line)
             sendDataToServer(invite)
             i = i + 1
-            print(f"{i} server sent to server")
     with open("invites3.txt", 'r', encoding='utf-8') as fp:
         Lines = fp.readlines()
     for line in Lines:

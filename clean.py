@@ -52,12 +52,13 @@ def exportDataToXls(guild_name, invite_code, expires_at, member_count, presence_
     sheet.write(i, 14, inviter_name)
     sheet.write(i, 15, inviter_avatar)
 
-def getInviteFromDb():
+def getInviteFromDb(proxies):
     url = "https://api.sos-epromotion.com/v1/invitesScrapper/getData/"
     try:
-        r = requests.post(url)
+        r = requests.post(url, proxies=proxies)
+        print(r.content)
         if r.status_code == 200:
-            if '1' in str(r.content):
+            if 'no data in db' in str(r.content):
                 print("No data in db")
                 return False, None
             else:
@@ -74,13 +75,13 @@ def getInviteFromDb():
     except Exception as err:
         return False, None
         
-def deleteInviteFromDb(invite):
+def deleteInviteFromDb(invite, proxies):
     url = "https://api.sos-epromotion.com/v1/invitesScrapper/deleteData/"
     data = {
         'guild_invite' : invite
     }
     try:
-        r = requests.post(url, data=data)
+        r = requests.post(url, data=data, proxies=proxies)
         if r.status_code == 200:
             print(r.content)
             if '1' in str(r.content):
@@ -236,13 +237,22 @@ def getInviteData(invite, token, proxies, i):
     try:
         dcfduid, sdcfduid = request_cookie()
         headers["cookie"]= f"__dcfduid={dcfduid}; __sdcfduid={sdcfduid}; locale=en-US"
-        r = requests.get(f"https://discord.com/api/v9/invites/{invite}?inputValue={invite}&with_counts=true&with_expiration=true", headers, proxies=proxies, timeout = 20)
+        url = f"https://discord.com/api/v9/invites/{invite}?inputValue={invite}&with_counts=true&with_expiration=true"
+        r = requests.get(url, headers, proxies=proxies, timeout = 20)
         if r.status_code == 404:
             print("Invalid Invite!")
             exportUnknownInvites(invite)
+            return True
         elif r.status_code == 401:
             print("Invalid Token")
             print(r.status_code)
+            return False
+        elif r.status_code == 429:
+            print("ratelimited!")
+            print(r.status_code)
+            print("waiting 1 minute")
+            time.sleep(60)
+            return False
         elif r.status_code == 200:
             r = r.json()
             invite_code = r["code"]
@@ -308,10 +318,11 @@ def getInviteData(invite, token, proxies, i):
             
             exportDataToXls(guild_name, invite_code, expires_at, member_count, presence_count, guild_id, guild_icon, guild_banner, guild_description, verification_level, invite_channelid, invite_channelname, inviter_id, inviter_name, inviter_avatar, i)
             exportDataToDb(guild_name, invite_code, expires_at, member_count, presence_count, guild_id, guild_icon, guild_banner, guild_description, verification_level, invite_channelid, invite_channelname, inviter_id, inviter_name, inviter_avatar, i)
-
+            return True
         else:
             print("Unknown error")
             print(r.status_code)
+            return False
     except Exception as err:
         print("Invalid Invite!")
         exportUnknownInvites(invite)
@@ -342,7 +353,12 @@ proxiesList = getproxies()
 i = 0 
 while True:
     i = i + 1
-    work, invite = getInviteFromDb()
+    proxies = { # use the proxies
+        "http": f"https://{random.choice(proxiesList)}",
+        "https": f"https://{random.choice(proxiesList)}"
+        }
+    proxie = None
+    work, invite = getInviteFromDb(proxies=None)
     print(invite)
     if work == True:
         if "\\n" in str(invite):
@@ -353,14 +369,11 @@ while True:
             print("invitec"+inviteC)
         inviteC = cleanInvite(inviteC)
         inviteC = prepareInvite(inviteC)
-        proxie = { # use the proxies
-            "http": f"https://{random.choice(proxiesList)}",
-            "https": f"https://{random.choice(proxiesList)}"
-            }
-        proxies = None
-        getInviteData(invite, token, proxies, i)
-        deleteInviteFromDb(softClean(invite))
-        workbook.save("invites.xls")
+        print(inviteC)
+        status =getInviteData(inviteC, token, proxies, i)
+        if status:
+            deleteInviteFromDb(softClean(invite), proxies=None)
+            workbook.save("invites.xls")
         wait = random.randint(2, 10)
         print(f"Waiting {wait} seconds")
         time.sleep(wait)

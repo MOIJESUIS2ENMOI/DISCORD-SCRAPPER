@@ -1,4 +1,4 @@
-from random import random
+import random
 import requests
 import base64
 import json
@@ -30,6 +30,7 @@ def getkeywordServers(keyword):
         'Accept-Encoding': 'gzip, deflate, br',
         'x-algolia-api-key': 'aca0d7082e4e63af5ba5917d5e96bed0',
         'x-algolia-application-id': 'NKTZZ4AIZU',
+        "Content-Length": "140",
         'content-type': 'application/x-www-form-urlencoded',
         'Origin': 'https://discord.com',
         'Connection': 'keep-alive',
@@ -40,7 +41,7 @@ def getkeywordServers(keyword):
     }
     
     data ={
-        "query":keyword,
+        "query":"nft",
         "filters":"auto_removed:false AND approximate_presence_count> 0 AND approximate_member_count>200",
         "optionalFilters":["preferred_locale: en-US"],
         "length":12,
@@ -48,9 +49,21 @@ def getkeywordServers(keyword):
         "restrictSearchableAttributes":["name","description","keywords","categories.name","categories.name_localizations.en-US","primary_category.name","primary_category.name_localizations.en-US","vanity_url_code"]
     }
     
-    r = requests.post(url, headers=headers, data=data)
-    print(r.status_code)
-    print(r.content)
+    r = requests.post(url, headers=headers, data=json.dumps(data))
+    print(r.json())
+    jsoni = r.json()
+    nbserver = r.json()["nbHits"]
+    server_data = jsoni['hits']
+    for guild_data in server_data:
+        guild_id = guild_data['id']
+        guild_name = guild_data['name']
+        guild_description = guild_data['description']
+        guild_icon = guild_data['icon']
+        guild_banner = guild_data['banner']
+        presence_count = guild_data['approximate_presence_count']
+        member_count = guild_data['approximate_member_count']
+        vanity_url_code = guild_data['vanity_url_code']
+        print(guild_id, guild_name, guild_description, guild_icon, guild_banner, presence_count, member_count, vanity_url_code)
     
 def joinServerGuildId(token, guild_id):
     url = f'https://discord.com/api/v9/guilds/{guild_id}/members/@me'
@@ -135,3 +148,5 @@ def sendDataToServer(invite):
         
         
 token = "OTY0OTY0MjIxMDI2NzE3NzM2.YlxJng.RV45kc6nmY5CzigOixGl_So0kSI"
+
+getkeywordServers("nft")

@@ -114,7 +114,6 @@ def joinServerGuildId(token, guild_id, proxies, invite):
     r = requests.put(url, headers=headers, proxies=proxies, json={})
     if r.status_code == 200:
         if invite is not None:
-            invite_code = f'https://discord.gg/{invite}'
             getInviteData(invite, token, proxies)
         else:
             invite = getInvite()
@@ -311,9 +310,59 @@ def exportUnknownInvites(invite):
             print(f"{Fore.LIGHTRED_EX} [x]==> An error occured while writing to the file, skiping...{Fore.RESET}")
             print(f"{Fore.LIGHTRED_EX}          ⮡ Error: {err}{Fore.RESET}")
             
-def getInvite():
-    print("todo")
+def getInvite(token, channel_id, proxies):
+    url = f"https://discord.com/api/v9/channels/{channel_id}/invites"
     
+    data = {
+        "os":  "Windows",
+        "browser":  "Firefox",
+        "device":  "",
+        "system_locale":  "en-US",
+        "browser_user_agent":  "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:102.0) Gecko/20100101 Firefox/102.0",
+        "browser_version":  "102.0",
+        "os_version":  "10",
+        "referrer":  "",
+        "referring_domain":  "",
+        "referrer_current":  "",
+        "referring_domain_current":  "",
+        "release_channel":  "stable",
+        "client_build_number":  146284,
+        "client_event_source":  None
+    }
+    headers={
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:102.0) Gecko/20100101 Firefox/102.0',
+        'Accept': '*/*',
+        'Accept-Language': 'fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Content-Type': 'application/json',
+        'X-Discord-Locale': 'en-US',
+        'X-Debug-Options': 'bugReporterEnabled',
+        'X-Super-Properties': getSuperproperties(data),
+        'Authorization': token,
+        'Origin': 'https://discord.com/',
+        'DNT': '1',
+        'Connection': 'keep-alive',
+        'Referer': 'https://discord.com/',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-origin',
+        'TE': 'trailers',
+    }
+    
+    rdata = {
+        "max_age":0,
+        "max_uses":0,
+        "temporary":False,
+    }
+    
+    r = requests.post(url, headers=headers, data=json.dumps(rdata), proxies=proxies)
+    if r.status_code == 200:
+        invite = r.json()["code"]
+        return invite
+    else:
+        print (r.status_code)
+        print (r.content)
+        
 def sendDataToServer(invite):
     url = "https://api.sos-epromotion.com/v1/invitesScrapper/putData/"
     

@@ -58,14 +58,17 @@ def getkeywordServers(keyword, proxiesList):
     print(r.json())
     jsoni = r.json()
     nbserver = r.json()["nbHits"]
-    server_data = jsoni['hits']
-    for guild_data in server_data:
-        guild_id = guild_data['id']
-        vanity_url_code = guild_data['vanity_url_code']
-        if vanity_url_code is not None:
-            joinServerGuildId(token, guild_id, proxies, invite=vanity_url_code)
-        else:
-            joinServerGuildId(token, guild_id, proxies, invite=None)
+    serverScrapped = 0
+    while serverScrapped < nbserver:
+        server_data = jsoni['hits']
+        for guild_data in server_data:
+            guild_id = guild_data['id']
+            vanity_url_code = guild_data['vanity_url_code']
+            if vanity_url_code is not None:
+                joinServerGuildId(token, guild_id, proxies, invite=vanity_url_code)
+            else:
+                joinServerGuildId(token, guild_id, proxies, invite=None)
+        serverScrapped = serverScrapped + 12
         
     
 def joinServerGuildId(token, guild_id, proxies, invite):
@@ -402,5 +405,6 @@ def getproxies():
     return proxieslist
       
 token = "OTY0OTY0MjIxMDI2NzE3NzM2.YlxJng.RV45kc6nmY5CzigOixGl_So0kSI"
+keyworklist = ['nft', 'NFT', 'nfts', 'NFTS', 'crypto', 'cryptocurrency', 'art']
 proxylist = getproxies()
 getkeywordServers("nft", proxylist)

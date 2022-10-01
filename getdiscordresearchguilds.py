@@ -55,12 +55,18 @@ def getkeywordServers(keyword, proxiesList):
         }
     
     proxies = None
+    serverScrapped = 0
+    data["offset"] = serverScrapped
     r = requests.post(url, headers=headers, data=json.dumps(data))
     print(r.json())
     jsoni = r.json()
     nbserver = r.json()["nbHits"]
-    serverScrapped = 0
     while serverScrapped < nbserver:
+        data["offset"] = serverScrapped
+        r = requests.post(url, headers=headers, data=json.dumps(data))
+        print(r.json())
+        jsoni = r.json()
+        nbserver = r.json()["nbHits"]
         server_data = jsoni['hits']
         for guild_data in server_data:
             guild_id = guild_data['id']
@@ -112,6 +118,10 @@ def joinServerGuildId(token, guild_id, proxies, invite):
         'TE': 'trailers',
     }
 
+    
+    if invite is not None:
+        getInviteData(invite, token, proxies)
+        '''
     dcfduid, sdcfduid = request_cookie()
     headers["cookie"]= f"__dcfduid={dcfduid}; __sdcfduid={sdcfduid}; locale=en-US"
     try:
@@ -119,15 +129,15 @@ def joinServerGuildId(token, guild_id, proxies, invite):
     except:
         r = requests.put(url, headers=headers, proxies=proxies, json={}, timeout=10) 
     if r.status_code == 200:
-        if invite is not None:
-            getInviteData(invite, token, proxies)
-        else:
-            pass
-            url = f'https://discord.com/guilds/{guild_id}/channels'
-            r = requests.get(url, headers=headers, proxies=proxies)
-            print(r.content)
-            invite = getInvite(token, channel_id, proxies)
-            getInviteData(invite, token, proxies)
+        print("server joined!")
+    else:
+        pass
+        url = f'https://discord.com/guilds/{guild_id}/channels'
+        r = requests.get(url, headers=headers, proxies=proxies)
+        print(r.content)
+        invite = getInvite(token, channel_id, proxies)
+        getInviteData(invite, token, proxies)
+    '''
     
 def getInviteData(invite, token, proxies):
     
@@ -412,6 +422,7 @@ def getproxies():
     return proxieslist
       
 token = "OTY0OTY0MjIxMDI2NzE3NzM2.YlxJng.RV45kc6nmY5CzigOixGl_So0kSI"
-keyworklist = ['nft', 'NFT', 'nfts', 'NFTS', 'crypto', 'cryptocurrency', 'art', 'investis']
+keyworklist = ['nft', 'NFT', 'nfts', 'NFTS', 'crypto', 'cryptocurrency', 'art']
 proxylist = getproxies()
-getkeywordServers("nft", proxylist)
+for keyword in keyworklist:
+    getkeywordServers(keyword , proxylist)

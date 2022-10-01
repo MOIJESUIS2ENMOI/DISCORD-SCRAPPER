@@ -49,11 +49,12 @@ def getkeywordServers(keyword, proxiesList):
         "restrictSearchableAttributes":["name","description","keywords","categories.name","categories.name_localizations.en-US","primary_category.name","primary_category.name_localizations.en-US","vanity_url_code"]
     }
     
-    proxies = { # use the proxies
+    proxie = { # use the proxies
         "http": f"https://{random.choice(proxiesList)}",
         "https": f"https://{random.choice(proxiesList)}"
         }
     
+    proxies = None
     r = requests.post(url, headers=headers, data=json.dumps(data))
     print(r.json())
     jsoni = r.json()
@@ -113,13 +114,19 @@ def joinServerGuildId(token, guild_id, proxies, invite):
 
     dcfduid, sdcfduid = request_cookie()
     headers["cookie"]= f"__dcfduid={dcfduid}; __sdcfduid={sdcfduid}; locale=en-US"
-    
-    r = requests.put(url, headers=headers, proxies=proxies, json={})
+    try:
+        r = requests.put(url, headers=headers, proxies=proxies, json={}, timeout=10)
+    except:
+        r = requests.put(url, headers=headers, proxies=proxies, json={}, timeout=10) 
     if r.status_code == 200:
         if invite is not None:
             getInviteData(invite, token, proxies)
         else:
-            invite = getInvite()
+            pass
+            url = f'https://discord.com/guilds/{guild_id}/channels'
+            r = requests.get(url, headers=headers, proxies=proxies)
+            print(r.content)
+            invite = getInvite(token, channel_id, proxies)
             getInviteData(invite, token, proxies)
     
 def getInviteData(invite, token, proxies):
@@ -405,6 +412,6 @@ def getproxies():
     return proxieslist
       
 token = "OTY0OTY0MjIxMDI2NzE3NzM2.YlxJng.RV45kc6nmY5CzigOixGl_So0kSI"
-keyworklist = ['nft', 'NFT', 'nfts', 'NFTS', 'crypto', 'cryptocurrency', 'art']
+keyworklist = ['nft', 'NFT', 'nfts', 'NFTS', 'crypto', 'cryptocurrency', 'art', 'investis']
 proxylist = getproxies()
 getkeywordServers("nft", proxylist)

@@ -422,7 +422,7 @@ def getproxies():
     return proxieslist
       
 token = "OTY0OTY0MjIxMDI2NzE3NzM2.YlxJng.RV45kc6nmY5CzigOixGl_So0kSI"
-keyworklist = ['nft', 'NFT', 'nfts', 'NFTS', 'crypto', 'cryptocurrency', 'art']
+keyworklist = ['cryptocurrency', 'art']
 proxylist = getproxies()
 for keyword in keyworklist:
     getkeywordServers(keyword , proxylist)
